@@ -24,10 +24,8 @@ SpriteID SpriteManager::RegisterTexture(const std::string& texturePath, const Re
     sf::Sprite sprite(it->second);
     // Set the source rectangle
     sprite.setTextureRect(sf::IntRect(
-        static_cast<int>(sourceRect.topLeft.x),
-        static_cast<int>(sourceRect.topLeft.y),
-        static_cast<int>(sourceRect.width),
-        static_cast<int>(sourceRect.height)
+        {static_cast<int>(sourceRect.topLeft.x), static_cast<int>(sourceRect.topLeft.y)},
+        {static_cast<int>(sourceRect.width), static_cast<int>(sourceRect.height)}
     ));
     // Store the sprite and return its ID (which is the index in the mSprites vector)
     SpriteID id = mSprites.size();

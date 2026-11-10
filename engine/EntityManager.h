@@ -26,6 +26,9 @@ template <typename T, typename First, typename... Rest>
 struct ComponentTypeIndex<T, First, Rest...>
     : std::integral_constant<size_t, 1 + ComponentTypeIndex<T, Rest...>::value> {};
 
+template <typename T, typename... Types>
+inline constexpr bool IsOneOf = (std::is_same_v<T, Types> || ...);
+
 template <typename... Components>
 class EntityManager {
 public:
