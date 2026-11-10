@@ -1,5 +1,6 @@
 #include <fstream>
 
+#include "CameraComponent.h"
 #include "CameraSystem.h"
 #include "CollisionComponent.h"
 #include "CollisionLateSystem.h"
@@ -40,15 +41,40 @@ int main(int argc, char* argv[]) {
     // Engine test code
     Engine engine(1024, 768, "Test Engine");
 
+    auto& wm = engine.GetWindowManager();
+    auto& em = engine.GetEntityManager();
+    ECSEngine::Rect windowRect = wm.GetWindowBounds();
+    float width = windowRect.width;
+    float height = windowRect.height;
+
     // Load sounds
 
     // Load maps
 
     // Place player
+    float playerX = 100.0f;  // temp variable so setup camera stops yelling at me
+    float playerY = 300.0f;  // also a placeholder
+    ECSEngine::EntityID playerID = em.CreateEntity("Player");
+    em.AddComponent(playerID, ECSEngine::LocationComponent{ECSEngine::Point2D(playerX, playerY)});  // for camera testing
 
     // Setup score component
 
     // Setup Camera
+    ECSEngine::CameraComponent cameraComponent;
+    cameraComponent.position = {playerX, height / 2.0f};  // adjust y position as necessary based on map
+    cameraComponent.worldUnitsPerPixel = 1.0f;
+    cameraComponent.hardExclusion = ECSEngine::Rect{{width*0.1f, 0.0f}, width*0.8f, height};  // 0.1W to 0.9W
+    cameraComponent.softExclusion = ECSEngine::Rect{{width*0.3f, 0.0f}, width*0.4f, height};  // 0.3W to 0.7W
+    cameraComponent.speed = 0.1f;
+
+    ECSEngine::CameraFollower cameraFollower{playerID};
+    ECSEngine::CameraShake cameraShake{0, {0.0f, 0.0f}};  // frameLimit, offset
+
+    // Add camera entity
+    ECSEngine::EntityID cameraID = em.CreateEntity("Camera");
+    em.AddComponent(cameraID, cameraComponent);
+    em.AddComponent(cameraID, cameraFollower);
+    em.AddComponent(cameraID, cameraShake);
 
     // Add all systems
     auto& sm = engine.GetSystemManager();
