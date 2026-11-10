@@ -21,7 +21,7 @@ void WindowManager::DebugDrawRect(const Rect& r, int red, int green, int blue, i
     Rect screenRect = WorldToWindow(r);
     // Create a rectangle shape for debugging
     sf::RectangleShape rectangle(sf::Vector2f(screenRect.width, screenRect.height));
-    rectangle.setPosition(screenRect.topLeft.x, screenRect.topLeft.y);
+    rectangle.setPosition({screenRect.topLeft.x, screenRect.topLeft.y});
     rectangle.setFillColor(sf::Color(
         static_cast<std::uint8_t>(red),
         static_cast<std::uint8_t>(green),
@@ -37,7 +37,7 @@ void WindowManager::DebugFrameRect(const Rect& r, int red, int green, int blue, 
     Rect screenRect = WorldToWindow(r);
     // Create a rectangle shape for debugging
     sf::RectangleShape rectangle(sf::Vector2f(screenRect.width, screenRect.height));
-    rectangle.setPosition(screenRect.topLeft.x, screenRect.topLeft.y);
+    rectangle.setPosition({screenRect.topLeft.x, screenRect.topLeft.y});
     rectangle.setFillColor(sf::Color::Transparent);
     rectangle.setOutlineColor(sf::Color(
         static_cast<std::uint8_t>(red),
@@ -49,22 +49,34 @@ void WindowManager::DebugFrameRect(const Rect& r, int red, int green, int blue, 
     mWindow->draw(rectangle);
 }
 
-Rect WindowManager::WindowToWorld(const Rect& rect) const { 
+Rect WindowManager::WindowToWorld(const Rect& rect) const {
     Point2D topLeft = WindowToWorld(rect.topLeft);
-    return Rect{topLeft, rect.width / mWorldUnitsPerPixel, rect.height / mWorldUnitsPerPixel};
+    return Rect{topLeft, rect.width * mWorldUnitsPerPixel, rect.height * mWorldUnitsPerPixel};
 }
 
 Point2D WindowManager::WindowToWorld(const Point2D& pt) const { 
-    return Point2D(WindowToWorld(pt.x), WindowToWorld(pt.y));
+    Rect bounds = GetWindowBounds();
+
+    float worldX = (pt.x - bounds.width / 2.0f) * mWorldUnitsPerPixel + mWorldCenter.x;
+
+    float worldY = (pt.y - bounds.height / 2.0f) * mWorldUnitsPerPixel + mWorldCenter.y;
+
+    return Point2D(worldX, worldY);
 }
 
-Rect WindowManager::WorldToWindow(const Rect& rect) const { 
+Rect WindowManager::WorldToWindow(const Rect& rect) const {
     Point2D topLeft = WorldToWindow(rect.topLeft);
     return Rect{topLeft, rect.width / mWorldUnitsPerPixel, rect.height / mWorldUnitsPerPixel};
 }
 
 Point2D WindowManager::WorldToWindow(const Point2D& pt) const { 
-    return Point2D(WorldToWindow(pt.x), WorldToWindow(pt.y));
+    Rect bounds = GetWindowBounds();
+
+    float screenX = (pt.x - mWorldCenter.x) / mWorldUnitsPerPixel + bounds.width / 2.0f;
+
+    float screenY = (pt.y - mWorldCenter.y) / mWorldUnitsPerPixel + bounds.height / 2.0f;
+
+    return Point2D(screenX, screenY);
 }
 
 // choose a world point and the screen point where it should appear
