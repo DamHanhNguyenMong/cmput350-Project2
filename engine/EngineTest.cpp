@@ -19,7 +19,7 @@ using ECSEngine::Rect;
 using ECSEngine::Point2D;
 using ECSEngine::InputComponent;
 
-// ---------- Part 1: EntityManager tests (no window needed) ----------
+// EntityManager tests (no window needed)
 
 struct Position { float x, y; };
 struct Health { int hp; };
@@ -166,7 +166,7 @@ static void TestEntityManager() {
     std::cout << "EntityManager tests passed\n";
 }
 
-// ---------- Part 2: engine smoke test (opens a window) ----------
+// Part 2: engine smoke test (opens a window)
 
 using Engine = ECSEngine::ECSEngine<InputComponent>;
 using View = EngineView<InputComponent>;
