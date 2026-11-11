@@ -1,4 +1,6 @@
 #include <fstream>
+#include <string>
+#include <iostream>
 
 #include "CameraComponent.h"
 #include "CameraSystem.h"
@@ -43,6 +45,8 @@ int main(int argc, char* argv[]) {
 
     auto& wm = engine.GetWindowManager();
     auto& em = engine.GetEntityManager();
+    auto& spm = engine.GetSpriteManager();
+
     ECSEngine::Rect windowRect = wm.GetWindowBounds();
     float width = windowRect.width;
     float height = windowRect.height;
@@ -58,6 +62,46 @@ int main(int argc, char* argv[]) {
     em.AddComponent(playerID, ECSEngine::LocationComponent{ECSEngine::Point2D(playerX, playerY)});  // for camera testing
 
     // Setup score component
+    ECSEngine::ScoreComponent scoreComponent;
+    scoreComponent.score = 0;
+
+    // Register textures for each digit
+    const float digitSide = 64.0f;  // 64x64
+    float x = 13 * digitSide;  // digits are in the 14th column (13th index)
+
+    for (int digit = 0; digit < 10; digit++) {
+        float y = (13 - digit) * digitSide;
+
+        scoreComponent.digitTextureID[digit] = spm.RegisterTexture(
+            gResourcePath + "spritesheet-tiles-default.png",
+            ECSEngine::Rect{{x, y}, digitSide, digitSide}
+        );
+    }
+
+    // Create digit entities
+    const float scoreX = 20.0f;
+    const float scoreY = 20.0f;
+    for (int i = 0; i < 3; i++) {
+        // Add digit location component
+        ECSEngine::EntityID digitId = em.CreateEntity("ScoreDigit" + std::to_string(i));
+        ECSEngine::LocationComponent location;
+        location.loc = ECSEngine::Point2D(scoreX + (i * digitSide), scoreY);
+        em.AddComponent(digitId, location);
+
+        // Add digit sprite component
+        ECSEngine::SpriteComponent sprite;
+        sprite.textureID = scoreComponent.digitTextureID[0];
+        sprite.bounds = ECSEngine::Rect{{0.0f, 0.0f}, digitSide, digitSide};
+        sprite.worldSpace = false;  // fixed on screen
+        em.AddComponent(digitId, sprite);
+
+        scoreComponent.digitID[i] = digitId;
+    }
+
+    // Add score entity itself
+    ECSEngine::EntityID scoreID = em.CreateEntity("Score");
+    em.AddComponent(scoreID, scoreComponent);
+
 
     // Setup Camera
     ECSEngine::CameraComponent cameraComponent;
