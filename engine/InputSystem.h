@@ -1,8 +1,12 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
 
 #include "Keyboard.h"
+#include "LocationComponent.h"
+#include "CollisionComponent.h"
+#include "SystemManager.h"
 
 namespace ECSEngine {
 
@@ -122,6 +126,11 @@ public:
 
                 input.dashTimer = kDashDuration;
                 input.lastDash = kDashInterval;
+                // Make sure the player wont immediately start falling while dashing
+                if (entityManager.template HasComponent<GravityComponent>(entity)) {
+                    auto& gravity = entityManager.template GetComponent<GravityComponent>(entity);
+                    gravity.disabledTimer = kDashDuration; // disable gravity for the duration of the dash
+                }
             }
             // 6. Apply velocity limits
             if (input.dashTimer > 0) { // During dash, allow higher velocity
