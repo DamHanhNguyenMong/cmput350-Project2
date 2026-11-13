@@ -10,9 +10,8 @@
 #include "LocationComponent.h"
 #include "SpriteComponent.h"
 #include "SystemManager.h"
-
-// =======TODO=========
-// Screen shake
+#include "CameraComponent.h"
+#include "Keyboard.h"
 
 
 namespace ECSEngine {
@@ -75,6 +74,8 @@ public:
             auto& movementA = entityManager.template GetComponent<MovementComponent>(entityA);
             // The player has an InputComponent; any other dynamic entity is a star
             bool aIsPlayer = entityManager.template HasComponent<InputComponent>(entityA);
+            Point2D velBefore = movementA.velocity;   // speed going into the hit, used for shake size
+
 
             EntityID entityB = 0;
             for (auto itB = entityManager.begin(); itB != entityManager.end(); ++itB, ++entityB) {
@@ -123,14 +124,41 @@ public:
             // Sounds for the player: only when a flag newly turns on
             if (aIsPlayer) {
                 bool onWall = collisionA.onLeftWall || collisionA.onRightWall;
+                // If the player has just landed on the ground or hit a wall, trigger a camera shake effect
+                bool newGround = collisionA.onGround && !playerWasOnGround;
+                bool newWall   = onWall && !playerWasOnWall;
+
+                if (newGround || newWall || collisionA.onCeiling) {
+                    const float kShakeScale = 0.3f;   
+                    // offset: if the player has just hit a wall, shake horizontally based on the previous horizontal velocity; 
+                    // if the player has just landed on the ground or hit the ceiling, shake vertically based on the previous vertical velocity
+                    Point2D offset(newWall ? velBefore.x * kShakeScale : 0.0f,
+                                (newGround || collisionA.onCeiling) ? velBefore.y * kShakeScale : 0.0f);
+                    auto& shakeStorage = entityManager.template GetComponentStorage<CameraShake>();
+                    for (size_t i = 0; i < shakeStorage.mStorage.size(); ++i) {
+                        if (shakeStorage.mValid[i]) {
+                            shakeStorage.mStorage[i].frameLimit = 10;
+                            shakeStorage.mStorage[i].offset = offset;
+                        }
+                    }
+                }
+
                 // if the player was not on the ground last frame but is now, play the landing sound
                 if (collisionA.onGround && !playerWasOnGround) {
                     engine->GetSoundManager().GetSound("land").play();
                 }
                 // and if the player was not on a wall last frame but is now, play the wall sound
-                else if (onWall && !playerWasOnWall && !collisionA.onGround && movementA.velocity.y > 0) {
+                // Wall slide sound: plays when the player starts sliding, even if they hit the wall while rising
+                InputComponent& input = entityManager.template GetComponent<InputComponent>(entityA);
+                // pushing intoWall is true if the player is pressing into the wall they are touching
+                bool pushingIntoWall = (collisionA.onLeftWall && input.keydown.test(Key::Left)) ||
+                                       (collisionA.onRightWall && input.keydown.test(Key::Right));
+                // wall sliding if the player is pushing into a wall, not on the ground, and moving downward
+                bool wallSliding = pushingIntoWall && !collisionA.onGround && movementA.velocity.y > 0;
+                if (wallSliding && !mWasWallSliding) {
                     engine->GetSoundManager().GetSound("wall").play();
                 }
+                mWasWallSliding = wallSliding;
             }
         }
         // 4: Collect stars after iterating, so we never remove an entity mid-loop
@@ -149,6 +177,9 @@ public:
         }
         return kContinue; 
     }
+    private:
+    bool mWasWallSliding = false;   // was the player sliding down a wall last frame (for the wall sound)
+
 };
 
 }  // namespace ECSEngine

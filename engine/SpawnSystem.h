@@ -84,8 +84,9 @@ public:
             float angle = angleDist(rng);
             float speed = speedDist(rng);
             MovementComponent movement;
-            movement.velocity = Point2D( std::cos(angle) * speed, std::sin(angle) * speed);
+            movement.velocity = Point2D(std::cos(angle) * speed, std::sin(angle) * speed);
             em.AddComponent(starID, movement);
+            em.AddComponent(starID, GravityComponent(Point2D(0.0f, 0.5f)));   // lighter than the player's 1.5
             // 4. Collision
             CollisionComponent collision{};
             collision.staticEntity = false;

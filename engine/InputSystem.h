@@ -12,11 +12,18 @@ namespace ECSEngine {
 
 const float kMaxRunVelocity = 15;
 const float kDashVelocity = 50;
-const float kJumpVelocity = 25;
+const float kJumpVelocity = 22;
 const float kGroundRunAcceleration = 5;
 const float kAirRunAcceleration = 4;
 const int kDashInterval = 60;
 const int kDashDuration = 8;
+const float kWallJumpKick = 14;
+const int kWallJumpLock = 10; 
+const float kWallClimbKick = 5; // small hop off the same wall
+const int kWallClimbLock = 3; // short lock, then holding toward the wall pulls you back
+const float kWallClimbJump = 18; // climb hop off the same wall
+const float kMaxAirVelocity = 10; 
+const int kWallGrace = 10; 
 
 template <typename... Components>
 class InputSystem : public System<Components...> {
@@ -59,7 +66,7 @@ public:
             bool dashPressed = dashHeld && !input.lastKeydown.test(Key::C);
 
             // 1. Horizontal movement (not while dashing)
-            if (input.dashTimer == 0) {
+            if (input.dashTimer == 0 && input.wallJumpTimer == 0) { // not dashing and not in wall jump lock
                 // if on ground, use ground acceleration; if in air, use air acceleration
                 float acceleration = collision.onGround ? kGroundRunAcceleration : kAirRunAcceleration;
                 if (moveLeft) {
@@ -68,7 +75,29 @@ public:
                 if (moveRight) {
                     movement.velocity.x += acceleration;
                 }
-                movement.velocity.x = std::clamp(movement.velocity.x, -kMaxRunVelocity, kMaxRunVelocity);
+                // If not moving left or right, apply friction/drag to slow down the player
+                if (!moveLeft && !moveRight) {
+                    movement.velocity.x *= collision.onGround ? 0.3f : 0.85f;   // ground friction / air drag
+                    if (std::abs(movement.velocity.x) < 0.5f) movement.velocity.x = 0;
+                }
+                float maxSpeed = collision.onGround ? kMaxRunVelocity : kMaxAirVelocity;
+                movement.velocity.x = std::clamp(movement.velocity.x, -maxSpeed, maxSpeed);
+            }
+
+            // Remember wall contact for a few frames so the wall jump still works after pressing away
+            if (collision.onGround) {
+                input.wallGraceTimer = 0;
+            }
+            else if (collision.onLeftWall) {
+                input.wallSide = -1;
+                input.wallGraceTimer = kWallGrace;
+            }
+            else if (collision.onRightWall) {
+                input.wallSide = 1;
+                input.wallGraceTimer = kWallGrace;
+            }
+            else if (input.wallGraceTimer > 0) {
+                --input.wallGraceTimer;
             }
 
             // 2. Jumping and wall jumping
@@ -78,22 +107,28 @@ public:
                     movement.velocity.y = -kJumpVelocity;
                     engine->GetSoundManager().GetSound("jump").play();
                 }
-                // Wall jump while falling
-                else if (movement.velocity.y > 0 && collision.onLeftWall) {
-                    movement.velocity.x = kMaxRunVelocity; // jump to the right
-                    movement.velocity.y = -kJumpVelocity; // advance vertically
+                // Wall jump: allowed any time you touch a wall in the air, falling or rising
+                else if (input.wallGraceTimer > 0 && input.wallSide == -1) {
+                    bool climbing = moveLeft;
+                    movement.velocity.x = climbing ? kWallClimbKick : kWallJumpKick;   // push right
+                    movement.velocity.y = -(climbing ? kWallClimbJump : kJumpVelocity);
+                    input.wallJumpTimer = climbing ? kWallClimbLock : kWallJumpLock;
+                    input.wallGraceTimer = 0; // use it up so it can't fire twice
                     engine->GetSoundManager().GetSound("jump").play();
                 }
-                else if (movement.velocity.y > 0 && collision.onRightWall) {
-                    movement.velocity.x = -kMaxRunVelocity; // jump to the left from the right wall
-                    movement.velocity.y = -kJumpVelocity;
+                else if (input.wallGraceTimer > 0 && input.wallSide == 1) {
+                    bool climbing = moveRight;
+                    movement.velocity.x = -(climbing ? kWallClimbKick : kWallJumpKick); // push left
+                    movement.velocity.y = -(climbing ? kWallClimbJump : kJumpVelocity);
+                    input.wallJumpTimer = climbing ? kWallClimbLock : kWallJumpLock;
+                    input.wallGraceTimer = 0;
                     engine->GetSoundManager().GetSound("jump").play();
                 }
             }
             // 3. Variable jump height
             // Stop upward movement when Z is released
             if (!jumpHeld && movement.velocity.y < 0) {
-                movement.velocity.y = 0;
+                movement.velocity.y *= 0.5f; 
             }
             // 4. Dash cooldown
             if (input.lastDash > 0) {
@@ -102,6 +137,10 @@ public:
             // Dash duration
             if (input.dashTimer > 0) {
                 --input.dashTimer;
+            }
+            // decrement wall jump timer
+            if (input.wallJumpTimer > 0) {
+                --input.wallJumpTimer;
             }
 
             // 5. Start a dash
@@ -129,6 +168,7 @@ public:
 
                 input.dashTimer = kDashDuration;
                 input.lastDash = kDashInterval;
+                engine->GetSoundManager().GetSound("dash").play();
                 // Make sure the player wont immediately start falling while dashing
                 if (entityManager.template HasComponent<GravityComponent>(entity)) {
                     auto& gravity = entityManager.template GetComponent<GravityComponent>(entity);
