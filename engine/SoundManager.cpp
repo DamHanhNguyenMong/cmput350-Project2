@@ -7,6 +7,9 @@
 namespace ECSEngine {
 
 void SoundManager::RegisterSound(const std::string& soundPath, const std::string& soundName) {
+    if (mSounds.count(soundName) > 0) {
+        throw std::logic_error("Sound already registered: " + soundName);
+    }
     // Create an empty buffer that will hold the audio data
     sf::SoundBuffer buffer;
     // Load audio file

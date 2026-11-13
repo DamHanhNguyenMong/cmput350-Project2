@@ -27,23 +27,11 @@ public:
             if (!entityManager.IsValid(entity)) {
                 continue;
             }
-            // if the entity does not have a CollisionComponent, LocationComponent, or SpriteComponent, skip it
-            if (!entityManager.template HasComponent<CollisionComponent>(entity)) {
+            if (!entityManager.template HasComponent<CollisionComponent>(entity) || !entityManager.template HasComponent<LocationComponent>(entity))  {
                 continue;
             }
-            auto& collision = entityManager.template GetComponent<CollisionComponent>(entity);
-            // Synchronize the box with the entity's location
-            if (entityManager.template HasComponent<LocationComponent>(entity) && entityManager.template HasComponent<SpriteComponent>(entity)) {
-                auto& location = entityManager.template GetComponent<LocationComponent>(entity);
-
-                auto& sprite = entityManager.template GetComponent<SpriteComponent>(entity);
-
-                if (sprite.worldSpace) {
-                    UpdateCollisionBox(collision, location, sprite);
-                }
-            }
-            // Save the box before input, gravity, and movement
-            collision.previousCollisionBox = collision.collisionBox;
+            // Store the current location as the previous location for the next frame
+            entityManager.template GetComponent<CollisionComponent>(entity).previousLocation = entityManager.template GetComponent<LocationComponent>(entity).loc;
         }
         return kContinue; 
     }
