@@ -45,7 +45,8 @@ void LoadMap(Engine& engine, const std::string& path, const std::string& file) {
     // Use a struct so i only need to have one unordered map
     struct Tile {
         ECSEngine::SpriteID sprite;
-        ECSEngine::Rect bounds;
+        ECSEngine::Rect draw; // where the sprite is drawn, relative to the location
+        ECSEngine::Rect bounds; // collision box, relative to the location
     };
 
     std::unordered_map<char, Tile> dict;
@@ -67,6 +68,7 @@ void LoadMap(Engine& engine, const std::string& path, const std::string& file) {
 
         tile.sprite = spm.RegisterTexture(path + texture, ECSEngine::Rect{{sx, sy}, sw, sh});
         tile.bounds = ECSEngine::Rect{{0, 0}, sw, sh};  // this will be correct for dictType == 1
+        tile.draw = ECSEngine::Rect{{0, 0}, sw, sh}; // this will be correct for dictType == 1
 
         // based on type of dict - 2 means gameplay not just decorative
         if (dictType == 2) {
@@ -103,15 +105,30 @@ void LoadMap(Engine& engine, const std::string& path, const std::string& file) {
 
             ECSEngine::SpriteComponent sprite;
             sprite.textureID = tile.sprite;
-            sprite.bounds = tile.bounds;
+            sprite.bounds = tile.draw;
             sprite.worldSpace = true;
             em.AddComponent(id, sprite);  // tile sprite component
 
-            if (dictType == 2) {
-                // collision stuff
+            if (dictType == 2 && line[col] != 'S') { // the spawner gets no collision, or new stars would be pushed out of it
+                ECSEngine::CollisionComponent collision{}; // {} zeroes all the flag bits
+                collision.staticEntity = 1;
+                collision.doesDamage = (line[col] == 'x'); // 'x' is the spike tile
+                collision.collisionBox = tile.bounds;
+                collision.previousLocation = location.loc;
+                em.AddComponent(id, collision);
             }
             if (line[col] == 'S') {
-                // spawn stuff
+                ECSEngine::SpawnComponent spawn;
+
+                spawn.entityID = id;
+                spawn.spawnType = "Star";
+                // get the star texture from the spritesheet
+                spawn.spawnTextureID = spm.RegisterTexture(path + "spritesheet-tiles-default.png", ECSEngine::Rect{{384, 704}, 64, 64});
+
+                spawn.timeToNextSpawn = 0; // spawn immediately
+                spawn.timeBetweenSpawns = 120; // 2 seconds at 60 fps
+                spawn.totalSpawns = 10; // spawn 10 stars
+                em.AddComponent(id, spawn);
             }
         }
     }
@@ -137,16 +154,50 @@ int main(int argc, char* argv[]) {
     float height = windowRect.height;
 
     // Load sounds
+    auto& snd = engine.GetSoundManager();
+    snd.RegisterSound(gResourcePath + "sfx_gem.ogg", "star"); // collect a star
+    snd.RegisterSound(gResourcePath + "footstep_grass_003.ogg", "land"); // landing
+    snd.RegisterSound(gResourcePath + "footstep_snow_001.ogg", "wall"); // pushing on a wall while falling
+    snd.RegisterSound(gResourcePath + "sfx_jump.ogg", "jump"); // used later in InputSystem
 
     // Load maps
     LoadMap(engine, gResourcePath, "sky.map");
     LoadMap(engine, gResourcePath, "world.map");
 
     // Place player
-    float playerX = 1200.0f;  // temp variable so setup camera stops yelling at me
-    float playerY = 300.0f;  // also a placeholder
+    float playerX = 800.0f;
+    float playerY = 560.0f;
+    ECSEngine::Point2D start(playerX, playerY);
     ECSEngine::EntityID playerID = em.CreateEntity("Player");
-    em.AddComponent(playerID, ECSEngine::LocationComponent{ECSEngine::Point2D(playerX, playerY)});  // for camera testing
+    em.AddComponent(playerID, ECSEngine::LocationComponent{start});
+    em.AddComponent(playerID, ECSEngine::MovementComponent{});
+    em.AddComponent(playerID, ECSEngine::GravityComponent(ECSEngine::Point2D(0.0f, 1.5f)));
+    em.AddComponent(playerID, ECSEngine::InputComponent(playerID));
+    em.AddComponent(playerID, ECSEngine::RespawnComponent{start});
+
+    ECSEngine::SpriteComponent playerSprite;
+    playerSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-characters-default.png", ECSEngine::Rect{{0, 0}, 64, 64});   // PLACEHOLDER rect
+    playerSprite.bounds = ECSEngine::Rect{{0, 0}, 64, 64};
+    playerSprite.worldSpace = true;
+    em.AddComponent(playerID, playerSprite);
+
+    ECSEngine::CollisionComponent playerCol{};
+    playerCol.collisionBox = ECSEngine::Rect{{12, 0}, 40, 64}; // slimmer than the sprite so it fits between the walls
+    playerCol.previousLocation = start;
+    em.AddComponent(playerID, playerCol);
+    // One extra star outside the wall
+    ECSEngine::EntityID bonusStar = em.CreateEntity("Star");
+    em.AddComponent(bonusStar, ECSEngine::LocationComponent{ECSEngine::Point2D(3584.0f, 300.0f)});
+    em.AddComponent(bonusStar, ECSEngine::MovementComponent{}); // zero velocity, no gravity: it floats in place
+    ECSEngine::SpriteComponent starSprite;
+    starSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-tiles-default.png", ECSEngine::Rect{{384, 704}, 64, 64});
+    starSprite.bounds = ECSEngine::Rect{{0, 0}, 64, 64};
+    starSprite.worldSpace = true;
+    em.AddComponent(bonusStar, starSprite);
+    ECSEngine::CollisionComponent starCol{};
+    starCol.collisionBox = ECSEngine::Rect{{0, 0}, 64, 64};
+    starCol.previousLocation = ECSEngine::Point2D(3584.0f, 300.0f);
+    em.AddComponent(bonusStar, starCol);
 
     // Setup score component
     ECSEngine::ScoreComponent scoreComponent;

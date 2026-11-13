@@ -11,7 +11,7 @@ namespace ECSEngine {
 // This is only defined if an entity also has a LocationComponent.
 class ScoreComponent {
 public:
-    int score;
+    int score=0;
     SpriteID digitTextureID[10];
     EntityID digitID[3];
 

@@ -76,15 +76,18 @@ public:
                 // Normal ground jump
                 if (collision.onGround) {
                     movement.velocity.y = -kJumpVelocity;
+                    engine->GetSoundManager().GetSound("jump").play();
                 }
                 // Wall jump while falling
                 else if (movement.velocity.y > 0 && collision.onLeftWall) {
                     movement.velocity.x = kMaxRunVelocity; // jump to the right
                     movement.velocity.y = -kJumpVelocity; // advance vertically
+                    engine->GetSoundManager().GetSound("jump").play();
                 }
                 else if (movement.velocity.y > 0 && collision.onRightWall) {
                     movement.velocity.x = -kMaxRunVelocity; // jump to the left from the right wall
                     movement.velocity.y = -kJumpVelocity;
+                    engine->GetSoundManager().GetSound("jump").play();
                 }
             }
             // 3. Variable jump height
