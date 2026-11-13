@@ -21,7 +21,38 @@ public:
         return name;
     }
 
-    tSystemReturn Run(EngineView<Components...>* engine) override { return kContinue; }
+    tSystemReturn Run(EngineView<Components...>* engine) override {
+        auto& em = engine->GetEntityManager();
+        auto& sm = engine->GetSpriteManager();
+        auto& wm = engine->GetWindowManager();
+
+        // Go through each entity to check we need to render a sprite for it
+        for (const Entity& entity : em) {
+            EntityID id = entity.GetID();
+            if (!em.IsValid(id)) { continue; }
+            if (!em.template HasComponent<SpriteComponent>(id)) { continue; }
+            if (!em.template HasComponent<LocationComponent>(id)) { continue; }
+
+            // Entity has a valid sprite component, and a location component
+            auto& spriteComponent = em.template GetComponent<SpriteComponent>(id);
+            auto& locationComponent = em.template GetComponent<LocationComponent>(id);
+
+            sf::Sprite sprite = sm.GetSprite(spriteComponent.textureID);
+
+            Point2D location = locationComponent.loc;  // if sprite is not in worldspace
+            if (spriteComponent.worldSpace) {
+                // Sprite is in world space, need to convert location and scale
+                location = wm.WorldToWindow(locationComponent.loc);
+                float scale = 1.0f / wm.GetWorldScale();
+                sprite.setScale({scale, scale});
+            }
+            sprite.setPosition({location.x, location.y});
+
+            wm.GetWindow()->draw(sprite);
+        }
+
+        return kContinue; 
+    }
 };
 
 }  // namespace ECSEngine
