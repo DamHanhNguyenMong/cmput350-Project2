@@ -1,6 +1,8 @@
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <stdexcept>
+#include <unordered_map>
 
 #include "CameraComponent.h"
 #include "CameraSystem.h"
@@ -31,7 +33,90 @@ std::string gResourcePath = "../assets/";
         ECSEngine::CameraShake, ECSEngine::ScoreComponent, ECSEngine::RespawnComponent
 using Engine = ECSEngine::ECSEngine<COMPONENTS>;
 
-void LoadMap(Engine& engine, const std::string& path, const std::string& file) {}
+void LoadMap(Engine& engine, const std::string& path, const std::string& file) {
+    std::ifstream in(path + file);
+    if (!in) {
+        throw std::runtime_error("Cant open map:" + path + file);
+    }
+
+    auto& em = engine.GetEntityManager();
+    auto& spm = engine.GetSpriteManager();
+
+    // Use a struct so i only need to have one unordered map
+    struct Tile {
+        ECSEngine::SpriteID sprite;
+        ECSEngine::Rect bounds;
+    };
+
+    std::unordered_map<char, Tile> dict;
+
+    std::string label;
+    int dictType;  // determines decorative or gameplay
+
+    in >> label;  // reads the string label
+    in >> dictType;  // reads the int dictType - either 1 or 2
+
+    // Go through dictionary entries until we hit 'map'
+    while (in >> label && label != "map") {
+        char key = label[0];  // to use as a key in the dict
+        std::string texture;
+        float sx, sy, sw, sh;  // 'source' x, y, w, h
+        Tile tile;
+
+        in >> texture >> sx >> sy >> sw >> sh;
+
+        tile.sprite = spm.RegisterTexture(path + texture, ECSEngine::Rect{{sx, sy}, sw, sh});
+        tile.bounds = ECSEngine::Rect{{0, 0}, sw, sh};  // this will be correct for dictType == 1
+
+        // based on type of dict - 2 means gameplay not just decorative
+        if (dictType == 2) {
+            float bx, by, bw, bh;  // bounds
+            in >> bx >> by >> bw >> bh;
+            tile.bounds = ECSEngine::Rect{{bx, by}, bw, bh};
+        }
+        dict[key] = tile;
+    }
+
+    // origin x and y, tile width and height, size width and height
+    float ox, oy, tw, th;
+    int gw, gh;
+    in >> label >> ox >> oy;
+    in >> label >> tw >> th;
+    in >> label >> gw >> gh;
+
+    std::string line;
+    std::getline(in, line);  // get rest of header line
+
+    for (int row = 0; row < gh && std::getline(in, line); row++) {
+        for (int col = 0; col < gw && col < (int)line.size(); col++) {
+            auto iterator = dict.find(line[col]);
+            if (iterator == dict.end()) {
+                continue;
+            }
+
+            const Tile& tile = iterator->second;  // second gets second member
+
+            // set up tile components
+            ECSEngine::EntityID id = em.CreateEntity(std::string("Tile-") + line[col]);
+            ECSEngine::LocationComponent location{{ox + (col * tw), oy + (row * th)}};
+            em.AddComponent(id, location);  // tile location component
+
+            ECSEngine::SpriteComponent sprite;
+            sprite.textureID = tile.sprite;
+            sprite.bounds = tile.bounds;
+            sprite.worldSpace = true;
+            em.AddComponent(id, sprite);  // tile sprite component
+
+            if (dictType == 2) {
+                // collision stuff
+            }
+            if (line[col] == 'S') {
+                // spawn stuff
+            }
+        }
+    }
+
+}
 
 int main(int argc, char* argv[]) {
     if (argc >= 3 && argv[1] == std::string("-path")) {
@@ -54,9 +139,11 @@ int main(int argc, char* argv[]) {
     // Load sounds
 
     // Load maps
+    LoadMap(engine, gResourcePath, "sky.map");
+    LoadMap(engine, gResourcePath, "world.map");
 
     // Place player
-    float playerX = 100.0f;  // temp variable so setup camera stops yelling at me
+    float playerX = 1200.0f;  // temp variable so setup camera stops yelling at me
     float playerY = 300.0f;  // also a placeholder
     ECSEngine::EntityID playerID = em.CreateEntity("Player");
     em.AddComponent(playerID, ECSEngine::LocationComponent{ECSEngine::Point2D(playerX, playerY)});  // for camera testing
