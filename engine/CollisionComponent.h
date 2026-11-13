@@ -37,8 +37,8 @@ struct CollisionComponent {
             return Rect{{loc.x + rel.topLeft.x, loc.y + rel.topLeft.y}, rel.width, rel.height};
         }
         // Move an entity and its collision box by the same amount
-        inline void MoveOutOfCollision(LocationComponent& location, CollisionComponent& collision, float dx, float dy) {
-            // Move the entity's location and its collision box by the specified amounts
+        inline void MoveOutOfCollision(LocationComponent& location, float dx, float dy) {
+            // Move the entity's location and its collision box by the specified amounts - collision box is relative to location
             location.loc.x += dx;
             location.loc.y += dy;
         }
@@ -60,36 +60,41 @@ struct CollisionComponent {
             // Determine which side was hit using the previous position
             // The order also prioritizes collisions caused by crossing an edge
 
+            // Was the previous box horizontally over the wall - not just touching its side
+            const bool wasAboveOrBelow = previousRight > wall.topLeft.x && previous.topLeft.x < wallRight;
+            // Was the previous box vertically beside the wall - not just resting on top or touching underneath
+            const bool wasBeside = previousBottom > wall.topLeft.y && previous.topLeft.y < wallBottom;
+
             // Landed on top of the wall: previous bottom was above the wall's top, and current bottom is below the wall's top
-            if (previousBottom <= wall.topLeft.y && currentBottom >= wall.topLeft.y) {
+            if (wasAboveOrBelow && previousBottom <= wall.topLeft.y && currentBottom >= wall.topLeft.y) {
                 float dy = wall.topLeft.y - currentBottom;
-                MoveOutOfCollision(location, moving, 0.0f, dy);
+                MoveOutOfCollision(location, 0.0f, dy);
 
                 movement.velocity.y *= -bounce; // Stop downward movement
                 moving.onGround = true; // standing on the wall
             }
             // Hit the underside of the obstacle: previous top was below the wall's bottom, and current top is above the wall's bottom
-            else if (previous.topLeft.y >= wallBottom && current.topLeft.y <= wallBottom) {
+            else if (wasAboveOrBelow && previous.topLeft.y >= wallBottom && current.topLeft.y <= wallBottom) {
                 float dy = wallBottom - current.topLeft.y;
 
-                MoveOutOfCollision(location, moving, 0.0f, dy);
+                MoveOutOfCollision(location, 0.0f, dy);
 
                 movement.velocity.y *= -bounce;
                 moving.onCeiling = true; // touch the bottom of the wall
             }
             // Hit the left side of the obstacle (obstacle is to the right)
-            else if (previousRight <= wall.topLeft.x && currentRight >= wall.topLeft.x) {
+            else if (wasBeside && previousRight <= wall.topLeft.x && currentRight >= wall.topLeft.x) {
                 float dx = wall.topLeft.x - currentRight;
-                MoveOutOfCollision(location, moving, dx, 0.0f);
+                MoveOutOfCollision(location, dx, 0.0f);
 
                 movement.velocity.x *= -bounce; // Reverse horizontal movement and apply bounce factor
                 moving.onRightWall = true; // on the right side of the player
             }
             // Hit the right side of the obstacle (obstacle is to the left)
-            else if (previous.topLeft.x >= wallRight && current.topLeft.x <= wallRight) {
+            else if (wasBeside && previous.topLeft.x >= wallRight && current.topLeft.x <= wallRight) {
                 float dx = wallRight - current.topLeft.x;
 
-                MoveOutOfCollision(location, moving, dx, 0.0f);
+                MoveOutOfCollision(location, dx, 0.0f);
 
                 movement.velocity.x *= -bounce;
                 moving.onLeftWall = true;
@@ -108,10 +113,10 @@ struct CollisionComponent {
                 if (overlapX < overlapY) {
                     // Resolve horizontally
                     if (current.topLeft.x < wall.topLeft.x) {
-                        MoveOutOfCollision(location, moving, -overlapX, 0.0f);
+                        MoveOutOfCollision(location, -overlapX, 0.0f);
                         moving.onRightWall = true;
                     } else {
-                        MoveOutOfCollision(location, moving, overlapX, 0.0f);
+                        MoveOutOfCollision(location, overlapX, 0.0f);
                         moving.onLeftWall = true;
                     }
 
@@ -120,10 +125,10 @@ struct CollisionComponent {
                 else {
                     // Resolve vertically
                     if (current.topLeft.y < wall.topLeft.y) {
-                        MoveOutOfCollision(location, moving, 0.0f, -overlapY);
+                        MoveOutOfCollision(location, 0.0f, -overlapY);
                         moving.onGround = true;
                     } else {
-                        MoveOutOfCollision(location, moving, 0.0f, overlapY);
+                        MoveOutOfCollision(location, 0.0f, overlapY);
                         moving.onCeiling = true;
                     }
 
@@ -146,15 +151,15 @@ struct CollisionComponent {
                 // if the left edge of A is to the left of the left edge of B, then A is to the left of B, 
                 // so we push A to the left and B to the right; otherwise, we push A to the right and B to the left
                 float dir = (ra.topLeft.x < rb.topLeft.x) ? -1.0f : 1.0f;   // direction A is pushed: -1 if A is to the left of B, 1 if A is to the right of B
-                MoveOutOfCollision(locA, a, dir * overlapX / 2.0f, 0.0f); // move A out of collision by half the overlap distance
-                MoveOutOfCollision(locB, b, -dir * overlapX / 2.0f, 0.0f); // move B out of collision by half the overlap distance in the opposite direction
+                MoveOutOfCollision(locA, dir * overlapX / 2.0f, 0.0f); // move A out of collision by half the overlap distance
+                MoveOutOfCollision(locB, -dir * overlapX / 2.0f, 0.0f); // move B out of collision by half the overlap distance in the opposite direction
                 std::swap(movA.velocity.x, movB.velocity.x); // swap the x velocities
                 movA.velocity.x *= kStarBounce; // apply bounce factor to the x velocities
                 movB.velocity.x *= kStarBounce;
             } else {
                 float dir = (ra.topLeft.y < rb.topLeft.y) ? -1.0f : 1.0f; // direction A is pushed: -1 if A is above B, 1 if A is below B
-                MoveOutOfCollision(locA, a, 0.0f, dir * overlapY / 2.0f);
-                MoveOutOfCollision(locB, b, 0.0f, -dir * overlapY / 2.0f);
+                MoveOutOfCollision(locA, 0.0f, dir * overlapY / 2.0f);
+                MoveOutOfCollision(locB, 0.0f, -dir * overlapY / 2.0f);
                 std::swap(movA.velocity.y, movB.velocity.y);
                 movA.velocity.y *= kStarBounce;
                 movB.velocity.y *= kStarBounce;

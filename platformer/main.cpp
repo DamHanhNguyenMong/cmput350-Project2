@@ -123,7 +123,7 @@ void LoadMap(Engine& engine, const std::string& path, const std::string& file) {
                 spawn.entityID = id;
                 spawn.spawnType = "Star";
                 // get the star texture from the spritesheet
-                spawn.spawnTextureID = spm.RegisterTexture(path + "spritesheet-tiles-default.png", ECSEngine::Rect{{384, 704}, 64, 64});
+                spawn.spawnTextureID = spm.RegisterTexture(path + "spritesheet-tiles-default.png", ECSEngine::Rect{{640, 320}, 64, 64});
 
                 spawn.timeToNextSpawn = 0; // spawn immediately
                 spawn.timeBetweenSpawns = 120; // 2 seconds at 60 fps
@@ -176,13 +176,14 @@ int main(int argc, char* argv[]) {
     em.AddComponent(playerID, ECSEngine::RespawnComponent{start});
 
     ECSEngine::SpriteComponent playerSprite;
-    playerSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-characters-default.png", ECSEngine::Rect{{0, 0}, 64, 64});   // PLACEHOLDER rect
-    playerSprite.bounds = ECSEngine::Rect{{0, 0}, 64, 64};
+    playerSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-characters-default.png", ECSEngine::Rect{{0, 5*128}, 128, 128});
+    playerSprite.bounds = ECSEngine::Rect{{0, 5*128}, 128, 128};
     playerSprite.worldSpace = true;
     em.AddComponent(playerID, playerSprite);
 
     ECSEngine::CollisionComponent playerCol{};
-    playerCol.collisionBox = ECSEngine::Rect{{12, 0}, 40, 64}; // slimmer than the sprite so it fits between the walls
+    // Should double check in debug that the player bounds are correct meow
+    playerCol.collisionBox = ECSEngine::Rect{{32, 24}, 64, 104}; // slimmer than the sprite so it fits between the walls
     playerCol.previousLocation = start;
     em.AddComponent(playerID, playerCol);
     // One extra star outside the wall
@@ -190,7 +191,7 @@ int main(int argc, char* argv[]) {
     em.AddComponent(bonusStar, ECSEngine::LocationComponent{ECSEngine::Point2D(3584.0f, 300.0f)});
     em.AddComponent(bonusStar, ECSEngine::MovementComponent{}); // zero velocity, no gravity: it floats in place
     ECSEngine::SpriteComponent starSprite;
-    starSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-tiles-default.png", ECSEngine::Rect{{384, 704}, 64, 64});
+    starSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-tiles-default.png", ECSEngine::Rect{{640, 320}, 64, 64});
     starSprite.bounds = ECSEngine::Rect{{0, 0}, 64, 64};
     starSprite.worldSpace = true;
     em.AddComponent(bonusStar, starSprite);
