@@ -163,6 +163,21 @@ bool ECSEngine<Components...>::ProcessEvents() {
 }
 
 template <typename... Components>
-void ECSEngine<Components...>::DebugDraw() {}
+void ECSEngine<Components...>::DebugDraw() {
+    // Draw collision rects for all valid entities - with collision and location components
+    // if statement ensures an engine with no collision / location components (i.e test engine) wont try to run this
+    if constexpr (IsOneOf<CollisionComponent, Components...> && IsOneOf<LocationComponent, Components...>) {
+        EntityID id = 0;
+        for (auto iterator = mEntityManager.begin(); iterator != mEntityManager.end(); ++iterator, ++id) {
+            if (!mEntityManager.IsValid(id)) { continue; }
+            if (!mEntityManager.template HasComponent<CollisionComponent>(id)) { continue; }
+            if (!mEntityManager.template HasComponent<LocationComponent>(id)) { continue; }
+
+            CollisionComponent& collisionComponent = mEntityManager.template GetComponent<CollisionComponent>(id);
+            LocationComponent& locationComponent = mEntityManager.template GetComponent<LocationComponent>(id);
+            mWindowManager.DebugFrameRect(WorldBox(collisionComponent.collisionBox, locationComponent.loc), 255, 0, 0, 255);
+        }
+    }
+}
 
 }  // namespace ECSEngine

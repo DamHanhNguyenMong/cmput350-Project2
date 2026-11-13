@@ -99,7 +99,7 @@ public:
                     if (collisionB.doesDamage && aIsPlayer && entityManager.template HasComponent<RespawnComponent>(entityA)) {
                         const Point2D& spawn = entityManager.template GetComponent<RespawnComponent>(entityA).loc;
                         // Move the location and the box together by the same offset
-                        MoveOutOfCollision(locationA, collisionA, spawn.x - locationA.loc.x, spawn.y - locationA.loc.y);
+                        MoveOutOfCollision(locationA, spawn.x - locationA.loc.x, spawn.y - locationA.loc.y);
                         collisionA.previousLocation = locationA.loc;
                         movementA.velocity = Point2D(0.0f, 0.0f);
                         break;  // stop checking this entity this frame, since it has moved
