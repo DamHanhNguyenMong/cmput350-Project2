@@ -159,6 +159,7 @@ int main(int argc, char* argv[]) {
     snd.RegisterSound(gResourcePath + "footstep_grass_003.ogg", "land"); // landing
     snd.RegisterSound(gResourcePath + "footstep_snow_001.ogg", "wall"); // pushing on a wall while falling
     snd.RegisterSound(gResourcePath + "sfx_jump.ogg", "jump"); // used later in InputSystem
+    snd.RegisterSound(gResourcePath + "laserLarge_000.ogg", "dash");
 
     // Load maps
     LoadMap(engine, gResourcePath, "sky.map");
@@ -186,9 +187,11 @@ int main(int argc, char* argv[]) {
     playerCol.collisionBox = ECSEngine::Rect{{32, 24}, 64, 104}; // slimmer than the sprite so it fits between the walls
     playerCol.previousLocation = start;
     em.AddComponent(playerID, playerCol);
-    // One extra star outside the wall
+    
+    // One extra star outside the wall (left of the starting wall)
+    ECSEngine::Point2D bonusLoc(8 * 64.0f, 6 * 64.0f); // column 8, row 6 -> (512, 384)
     ECSEngine::EntityID bonusStar = em.CreateEntity("Star");
-    em.AddComponent(bonusStar, ECSEngine::LocationComponent{ECSEngine::Point2D(3584.0f, 300.0f)});
+    em.AddComponent(bonusStar, ECSEngine::LocationComponent{bonusLoc});
     em.AddComponent(bonusStar, ECSEngine::MovementComponent{}); // zero velocity, no gravity: it floats in place
     ECSEngine::SpriteComponent starSprite;
     starSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-tiles-default.png", ECSEngine::Rect{{640, 320}, 64, 64});
@@ -197,8 +200,9 @@ int main(int argc, char* argv[]) {
     em.AddComponent(bonusStar, starSprite);
     ECSEngine::CollisionComponent starCol{};
     starCol.collisionBox = ECSEngine::Rect{{0, 0}, 64, 64};
-    starCol.previousLocation = ECSEngine::Point2D(3584.0f, 300.0f);
+    starCol.previousLocation = bonusLoc;
     em.AddComponent(bonusStar, starCol);
+
 
     // Setup score component
     ECSEngine::ScoreComponent scoreComponent;

@@ -14,7 +14,7 @@ namespace ECSEngine
 // Assumed constants
 const float kMaxFallVelocity = 35; // Maximum falling speed
 const float kFastFallVelocity = 50; // Maximum falling speed when fast falling
-const float kWallSlideVelocity = 8; // Maximum falling speed when sliding down a wall
+const float kWallSlideVelocity = 4; // Maximum falling speed when sliding down a wall
 
 template <typename... Components>
 class GravitySystem : public System<Components...> {
@@ -67,31 +67,41 @@ public:
             }
 			// 3. Apply gravity
 			float accelerationY = gravity.acceleration.y;
+            if (movement.velocity.y > 0) {
+                accelerationY *= 1.5f;   // fall gravity multiplier
+                // Holding Down while falling speeds up the fall even more
+                if constexpr (IsOneOf<InputComponent, Components...>) {
+                    if (entityManager.template HasComponent<InputComponent>(entity) &&
+                        entityManager.template GetComponent<InputComponent>(entity).keydown.test(Key::Down)) {
+                        accelerationY *= 1.5f;
+                    }
+                }
+            }
 			movement.velocity.y += accelerationY;
 
 			// 4. Limit falling speed
 			// When moving downward
 			if (movement.velocity.y > 0) {
-				// Wall sliding: fall more slowly
-                if (onLeftWall || onRightWall) {
-					// Falling speed is either the wall slide speed or the fast fall speed, whichever is lower
-                    movement.velocity.y = std::min(movement.velocity.y, kWallSlideVelocity);
-                }
-				// If the entity has an InputComponent, check if the Down key is pressed for fast falling
-				else if constexpr (IsOneOf<InputComponent, Components...>) {
-                    bool fastFall = false;
+				bool pushingIntoWall = false;
+                bool fastFall = false;
+                // Only entities with input (the player) can wall slide or fast fall
+                if constexpr (IsOneOf<InputComponent, Components...>) {
                     if (entityManager.template HasComponent<InputComponent>(entity)) {
                         InputComponent& input = entityManager.template GetComponent<InputComponent>(entity);
+                        // Wall slide only when the arrow key points into the wall being touched
+                        pushingIntoWall = (onLeftWall && input.keydown.test(Key::Left)) ||
+                                          (onRightWall && input.keydown.test(Key::Right));
                         fastFall = input.keydown.test(Key::Down);
                     }
-					// Limit the falling speed to either the fast fall speed or the maximum fall speed, whichever is lower
-                    movement.velocity.y = std::min(movement.velocity.y, fastFall ? kFastFallVelocity : kMaxFallVelocity
-                    );
                 }
-				// If the entity is not on a wall and doesn't have an InputComponent, limit the falling speed to the maximum fall speed
-				else {
-					movement.velocity.y = std::min(movement.velocity.y, kMaxFallVelocity);
-				}
+                float maxFall = kMaxFallVelocity;
+                if (pushingIntoWall) {
+                    maxFall = kWallSlideVelocity; // slow slide down the wall
+                }
+                else if (fastFall) {
+                    maxFall = kFastFallVelocity; // holding Down
+                }
+                movement.velocity.y = std::min(movement.velocity.y, maxFall);
 			}
 
 		}
