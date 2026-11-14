@@ -2,3 +2,21 @@ Team Member Contributions:
 
 Hanh: Managers, Collision system, ECS Engine, Location system, Gravity system, Input System, Movement system, Respawn system
 Zoe: Camera system, Score system, Sprite system, Map Loading, Bug fixing, Documentation
+
+AI Usage (Repeated from README):
+AI was used to assist with documentation, including brief code comments. No AI-generated code or core project functionality was used.
+
+Implementation Notes:
+- Running: With no key held, ground friction / air drag slows the player. x can be changed while jumping.
+- Jumping: Releasing z (jump button) while still rising reduces the upward speed each frame; i.e. holding 'z' produces a higher jump than tapping 'z'
+- Gravity: Gravity is faster pulling down compared to as the player jumps. Player falls faster while holding down arrow.
+- Wall slide: Pressing towards a wall while falling reduces fall speed and plays 'wall' sound.
+- Wall jump: Pressing 'z' while touching a wall in the air kicks the player away from the wall. If arrow is held down towards the wall, player can climb, but the player will jump away from the        wall if the arrow key pressed is away from the wall OR if no arrow key is pressed at all.
+- Dash: During a dash, gravity doesn't act on the player (don't fall down while mid-dash)
+- Collision resolution: Uses the previous and current boxes. If the entity was already overlapping, the smallest overlap is used.
+- Screen shake: When the player newly lands, hits a wall, or hits a ceiling, the camera shakes, and the size of the shake decays and flips sign each frame.
+- Camera: y is fixed. hardExclusion is the middle 80% of the screen (10% off both sides), and softExclusion is the middle 40% of the screen (30% off both sides)/
+- Score: Score is always represented in 3 digits (leading zeros where necessary). If a score above 999 were achieved, score would continue to display 999 at the maximum.
+- Spawner: each star spawned gets a random direction and lighter gravity, and bounces off of the level and other stars.
+- Extra star: one extra floating star is added outside the left wall to test jumping over the wall.
+- Debug: f3 outlines every collision box in red.
