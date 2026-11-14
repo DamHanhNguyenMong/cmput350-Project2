@@ -5,9 +5,11 @@
 
 #include "InputComponent.h"
 #include "CollisionComponent.h"
+#include "GravityComponent.h"
 #include "Keyboard.h"
 #include "LocationComponent.h"
 #include "SystemManager.h"
+#include "MovementComponent.h"
 
 namespace ECSEngine
 {

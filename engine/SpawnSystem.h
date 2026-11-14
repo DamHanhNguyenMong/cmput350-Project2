@@ -5,7 +5,9 @@
 #include <string>
 #include <vector>
 #include "CollisionComponent.h"
+#include "GravityComponent.h"
 #include "LocationComponent.h"
+#include "MovementComponent.h"
 #include "SpawnComponent.h"
 #include "SpriteComponent.h"
 #include "SystemManager.h"

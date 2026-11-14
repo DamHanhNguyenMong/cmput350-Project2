@@ -2,6 +2,7 @@
 
 #include "LocationComponent.h"
 #include "SystemManager.h"
+#include "MovementComponent.h"
 
 namespace ECSEngine {
 

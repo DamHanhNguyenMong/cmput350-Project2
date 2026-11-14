@@ -11,6 +11,7 @@
 #include <SFML/Graphics/Texture.hpp>
 #include "LocationComponent.h"
 #include "SpriteComponent.h"
+#include "MovementComponent.h"
 
 namespace ECSEngine {
 const float kStarBounce = 0.8f;   // fraction of speed kept after a bounce

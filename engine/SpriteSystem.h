@@ -39,10 +39,11 @@ public:
 
             sf::Sprite sprite = sm.GetSprite(spriteComponent.textureID);
 
-            Point2D location = locationComponent.loc;  // if sprite is not in worldspace
+            Point2D location(locationComponent.loc.x + spriteComponent.bounds.topLeft.x,
+                            locationComponent.loc.y + spriteComponent.bounds.topLeft.y);  // if sprite is not in worldspace
             if (spriteComponent.worldSpace) {
                 // Sprite is in world space, need to convert location and scale
-                location = wm.WorldToWindow(locationComponent.loc);
+                location = wm.WorldToWindow(location);
                 float scale = 1.0f / wm.GetWorldScale();
                 sprite.setScale({scale, scale});
             }

@@ -2,7 +2,10 @@
 
 #include <unordered_map>
 
+#include "CollisionComponent.h"
 #include "CameraComponent.h"
+#include "CameraFollowerComponent.h"
+#include "CameraShakeComponent.h"
 #include "LocationComponent.h"
 #include "MathUtil.h"
 #include "SpriteComponent.h"
@@ -46,7 +49,9 @@ public:
         float scale = cam.worldUnitsPerPixel;
 
         // Only have to follow x coordinate - y never changes
-        float playerX = em.template GetComponent<LocationComponent>(follower.entityID).loc.x;
+        Point2D location = em.template GetComponent<LocationComponent>(follower.entityID).loc;
+        Rect box = em.template GetComponent<CollisionComponent>(follower.entityID).collisionBox;
+        float playerX = location.x + box.topLeft.x + box.width / 2.0f;  // Gets center of body to track player
         float screenX = width / 2.0f + (playerX - cam.position.x) / scale; // mid point + cam relative to player
 
         float hardL = cam.hardExclusion.topLeft.x;

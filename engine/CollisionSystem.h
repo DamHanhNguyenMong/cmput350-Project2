@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "CameraShakeComponent.h"
 #include "InputComponent.h"
 #include "ScoreComponent.h"
 #include "CollisionComponent.h"
@@ -12,6 +13,8 @@
 #include "SystemManager.h"
 #include "CameraComponent.h"
 #include "Keyboard.h"
+#include "MovementComponent.h"
+#include "RespawnComponent.h"
 
 
 namespace ECSEngine {

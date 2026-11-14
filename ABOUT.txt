@@ -1,0 +1,4 @@
+Team Member Contributions:
+
+Hanh: Managers, Collision system, ECS Engine, Location system, Gravity system, Input System, Movement system, Respawn system
+Zoe: Camera system, Score system, Sprite system, Map Loading, Bug fixing, Documentation

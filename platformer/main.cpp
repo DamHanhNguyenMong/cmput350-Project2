@@ -5,18 +5,23 @@
 #include <unordered_map>
 
 #include "CameraComponent.h"
+#include "CameraFollowerComponent.h"
+#include "CameraShakeComponent.h"
 #include "CameraSystem.h"
 #include "CollisionComponent.h"
 #include "CollisionLateSystem.h"
 #include "CollisionSystem.h"
 #include "ECSEngine.h"
 #include "EntityManager.h"
+#include "GravityComponent.h"
 #include "GravitySystem.h"
 #include "InputComponent.h"
 #include "InputSystem.h"
 #include "LocationComponent.h"
 #include "MathUtil.h"
+#include "MovementComponent.h"
 #include "MovementSystem.h"
+#include "RespawnComponent.h"
 #include "ScoreComponent.h"
 #include "ScoreSystem.h"
 #include "SpawnComponent.h"
@@ -143,7 +148,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Using resource path: " << gResourcePath << "\n";
 
     // Engine test code
-    Engine engine(1024, 768, "Test Engine");
+    Engine engine(1024, 768, "Platformer");
 
     auto& wm = engine.GetWindowManager();
     auto& em = engine.GetEntityManager();
@@ -178,12 +183,11 @@ int main(int argc, char* argv[]) {
 
     ECSEngine::SpriteComponent playerSprite;
     playerSprite.textureID = spm.RegisterTexture(gResourcePath + "spritesheet-characters-default.png", ECSEngine::Rect{{0, 5*128}, 128, 128});
-    playerSprite.bounds = ECSEngine::Rect{{0, 5*128}, 128, 128};
+    playerSprite.bounds = ECSEngine::Rect{{0, 0}, 128, 128};
     playerSprite.worldSpace = true;
     em.AddComponent(playerID, playerSprite);
 
     ECSEngine::CollisionComponent playerCol{};
-    // Should double check in debug that the player bounds are correct meow
     playerCol.collisionBox = ECSEngine::Rect{{32, 24}, 64, 104}; // slimmer than the sprite so it fits between the walls
     playerCol.previousLocation = start;
     em.AddComponent(playerID, playerCol);
