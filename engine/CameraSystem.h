@@ -61,7 +61,9 @@ public:
 
         if (screenX < hardL) {cam.position.x += (screenX - hardL) * scale;}  // snap
         else if (screenX > hardR) {cam.position.x += (screenX - hardR) * scale;}
-        else if (screenX < softL) {cam.position.x += cam.speed * (screenX - softL) * scale;}  // tweening
+
+        screenX = width / 2.0f + (playerX - cam.position.x) / scale;  // Recompute after the snap
+        if (screenX < softL) {cam.position.x += cam.speed * (screenX - softL) * scale;}  // always tween, even after snap
         else if (screenX > softR) {cam.position.x += cam.speed * (screenX - softR) * scale;}
 
         // Shake

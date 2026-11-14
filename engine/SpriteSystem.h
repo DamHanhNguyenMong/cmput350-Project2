@@ -2,6 +2,7 @@
 
 #include <bitset>
 #include <unordered_map>
+#include <cmath>
 
 #include "CameraComponent.h"
 #include "EntityManager.h"
@@ -47,6 +48,8 @@ public:
                 float scale = 1.0f / wm.GetWorldScale();
                 sprite.setScale({scale, scale});
             }
+            location.x = std::round(location.x);
+            location.y = std::round(location.y);
             sprite.setPosition({location.x, location.y});
 
             wm.GetWindow()->draw(sprite);
