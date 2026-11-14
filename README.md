@@ -1,4 +1,8 @@
 # CMPUT 350 HW 2
+- Notes on implementation and what was implemented by which group member are in ABOUT.txt
+
+### AI Usage
+AI was used to assist with documentation, including brief code comments. No AI-generated code or core project functionality was used.
 
 ### Controls
 - Left / Right arrow: run left / right respectively
@@ -200,3 +204,23 @@ Lifetime / Validity Rules:
   -  The engine calls display() after the systems.
 - SpawnSystem:
   - Counts down each spawner and records spawn requests, then creates the stars after the loop.
+ 
+### Map Loading
+- LoadMap(engine, path, file) in main.cpp reads map format:
+    dictionary <1/2>
+    <char> <texture> <sx sy sw sh> [<bx by bw bh> if dictionary 2]
+    ...
+    map origin <x y> tile <w h> size <cols rows>
+    <rows of characters>
+
+- For every character in the dictionary an entity is created at origin + (col*tileWidth, row*tileHeight) with a location and world-space sprite.
+- In a type 2 map, every tile except 'S' also gets a static CollisionComponent using the dictionary bounding box; 'x' tiles are spikes.
+- 'S' tiles get a SpawnComponent instead of collision.
+- Characters not in the dictionary are empty.
+- sky.map is loaded first as it is drawn in the background, behind world.map which is loaded second (gameplay map)
+
+
+### Known Limitations
+- Movement is per frame, not scaled by elapsed time, so relies on the frame limit.
+- Collision is checked between every dynamic entity and every other entity each frame (could be slow).
+- Sprites are drawn in creation order - no z coordinate to dictate layer.
